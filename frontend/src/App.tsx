@@ -175,7 +175,7 @@ function App() {
       <Drawer
         opened={drawerOpened}
         onClose={() => setDrawerOpened(false)}
-        title="Source Document"
+        title={`Source Document`}
         position="right"
         size="50%"
       >

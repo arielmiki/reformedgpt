@@ -12,27 +12,49 @@ interface ChatHistoryProps {
 }
 
 function renderMessageContent(message: Message, onCitationClick: (source: Source) => void) {
-  const parts = [];
-  const regex = /<citation source_id="(\d+)"\s*\/?>/g;
+  const content = message?.content ?? '';
+  const parts: React.ReactNode[] = [];
+  // Supports both self-closing: <citation source_id="0" />
+  // and paired tags:        <citation source_id="0">...ignored children...</citation>
+  const regex = /<citation\s+source_id="(\d+)">\s*([\s\S]*?)\s*<\/citation>|<citation\s+source_id="(\d+)"\s*\>/g;
   let lastIndex = 0;
-  let match;
+  let match: RegExpExecArray | null;
 
-  while ((match = regex.exec(message.content)) !== null) {
+  while ((match = regex.exec(content)) !== null) {
     // Add the text before the citation
     if (match.index > lastIndex) {
-      parts.push(<Text component="span" key={`text-${lastIndex}`}>{message.content.substring(lastIndex, match.index)}</Text>);
+      parts.push(
+        <Text component="span" key={`text-${lastIndex}`}>
+          {content.substring(lastIndex, match.index)}
+        </Text>
+      );
     }
 
     // Add the citation
-    const sourceId = parseInt(match[1], 10);
-        parts.push(<Citation key={`citation-${match.index}`} sourceId={sourceId} sources={message.sources || []} onClick={() => onCitationClick(message.sources![sourceId])} />);
-    
+    const sourceId = parseInt((match[1] ?? match[3]) as string, 10);
+    const sources = message.sources || [];
+    parts.push(
+      <Citation
+        key={`citation-${match.index}`}
+        sourceId={sourceId}
+        sources={sources}
+        onClick={() => {
+          const src = sources[sourceId];
+          if (src) onCitationClick(src);
+        }}
+      />
+    );
+
     lastIndex = match.index + match[0].length;
   }
 
   // Add any remaining text after the last citation
-  if (lastIndex < message.content.length) {
-    parts.push(<Text component="span" key={`text-${lastIndex}`}>{message.content.substring(lastIndex)}</Text>);
+  if (lastIndex < content.length) {
+    parts.push(
+      <Text component="span" key={`text-${lastIndex}`}>
+        {content.substring(lastIndex)}
+      </Text>
+    );
   }
 
   return parts;

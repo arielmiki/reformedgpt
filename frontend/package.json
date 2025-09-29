@@ -19,7 +19,7 @@
     "@tabler/icons-react": "^3.35.0",
     "@tailwindcss/postcss": "^4.1.13",
     "@tailwindcss/vite": "^4.1.13",
-    "@types/react-pdf": "^6.2.0",
+    "@types/react-pdf": "^5.0.7",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-pdf": "^10.1.0",

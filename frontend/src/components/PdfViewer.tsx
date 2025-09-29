@@ -1,9 +1,20 @@
 import { useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+
 
 
 // Configure the PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+// Use Vite-friendly worker bundling instead of remote CDN to avoid CORS/issues
+// Vite will turn this into a URL at build time
+// IMPORTANT: Load worker from react-pdf's own pdfjs-dist to ensure versions match
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'react-pdf/node_modules/pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
+
 interface PdfViewerProps {
   file: string;
   pageNumber: number;
@@ -11,35 +22,47 @@ interface PdfViewerProps {
 }
 
 export function PdfViewer({ file, pageNumber, highlight }: PdfViewerProps) {
+
   const [numPages, setNumPages] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
   }
 
   const textRenderer = (textItem: any) => {
-    if (!highlight || !textItem.str) {
-      return textItem.str;
-    }
-    const regex = new RegExp(`(${highlight})`, 'gi');
-    const parts = textItem.str.split(regex);
+    const raw = String(textItem?.str ?? '');
+    if (!highlight || !raw) return raw;
 
-    return parts.map((part: string, index: number) =>
-      regex.test(part) ? <mark key={index}>{part}</mark> : part
-    );
+
+    // Simple containment: mark if this text item exists within the highlight string
+    const contains = highlight.toLowerCase().includes(raw.toLowerCase());
+    return contains ? `<mark>${raw}</mark>` : raw;
   };
+
+  // Normalize page number: ensure 1-based and within bounds
+  const normalizedPage = Math.max(1, pageNumber  || 1);
 
   return (
     <div>
-      <Document file={`http://localhost:8000/static/${file}`} onLoadSuccess={onDocumentLoadSuccess}>
-        <Page
-          pageNumber={pageNumber}
-          customTextRenderer={textRenderer}
-        />
+      <Document
+        file={`http://localhost:8000/static/${file}`}
+        onLoadSuccess={onDocumentLoadSuccess}
+        onLoadError={(e) => setError((e as Error)?.message || 'Failed to load PDF')}
+      >
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          <Page
+            pageNumber={normalizedPage}
+            customTextRenderer={textRenderer}
+            renderTextLayer={true}
+            renderAnnotationLayer={false}
+          />
+        </div>
       </Document>
       <p>
-        Page {pageNumber} of {numPages}
+        {error ? `Error: ${error}` : `Page ${normalizedPage} of ${numPages ?? '?'}`}
       </p>
     </div>
   );
 }
+
