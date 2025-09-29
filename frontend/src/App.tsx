@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { AppShell, ActionIcon, Box, useComputedColorScheme } from '@mantine/core';
+import { AppShell, ActionIcon, Box, Drawer, useComputedColorScheme } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { v4 as uuidv4 } from 'uuid';
-import type { Chat, Message } from './types';
+import type { Chat, Message, Source } from './types';
 import { ChatHistory } from './components/ChatHistory';
 import { ChatInput } from './components/ChatInput';
 import { ChatList } from './components/ChatList';
 import { ThemeSwitcher } from './components/ThemeSwitcher';
+import { PdfViewer } from './components/PdfViewer';
+import { streamChat } from './services/api';
 
 function App() {
 
@@ -14,6 +16,8 @@ function App() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
   const viewport = useRef<HTMLDivElement>(null);
+  const [drawerOpened, setDrawerOpened] = useState(false);
+  const [pdfSource, setPdfSource] = useState<{ file: string; pageNumber: number; highlight: string } | null>(null);
 
   // Load chats from local storage on initial render
   useEffect(() => {
@@ -59,6 +63,15 @@ function App() {
     setActiveChatId(newChatId);
   };
 
+  const handleCitationClick = (source: Source) => {
+    setPdfSource({
+      file: source.metadata.source,
+      pageNumber: source.metadata.page,
+      highlight: source.content,
+    });
+    setDrawerOpened(true);
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim() || !activeChatId) return;
 
@@ -96,45 +109,20 @@ function App() {
     }));
 
     try {
-      const response = await fetch('http://localhost:8000/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ messages: newMessages.map(({ id, ...rest }) => rest) }),
-      });
-
-      if (!response.body) {
-        throw new Error('No response body');
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
       let content = '';
+      let currentSources: Source[] = [];
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const eventLines = chunk.split('\n\n').filter(line => line.startsWith('data:'));
-
-        for (const line of eventLines) {
-          const jsonStr = line.replace('data: ', '');
-          try {
-            const event = JSON.parse(jsonStr);
-            if (event.type === 'delta') {
-              content += event.data;
-              setChats((prev) => {
-                const newMsgs = prev[activeChatId].messages.map((msg) =>
-                  msg.id === botMessageId ? { ...msg, content } : msg
-                );
-                return { ...prev, [activeChatId]: { ...prev[activeChatId], messages: newMsgs } };
-              });
-            }
-          } catch (e) {
-            console.error('Failed to parse SSE event:', jsonStr);
-          }
+      for await (const event of streamChat(newMessages.map(({ id, ...rest }) => rest))) {
+        if (event.type === 'context') {
+          currentSources = event.data;
+        } else if (event.type === 'delta') {
+          content += event.data;
+          setChats((prev) => {
+            const newMsgs = prev[activeChatId].messages.map((msg) =>
+              msg.id === botMessageId ? { ...msg, content, sources: currentSources } : msg
+            );
+            return { ...prev, [activeChatId]: { ...prev[activeChatId], messages: newMsgs } };
+          });
         }
       }
     } catch (error) {
@@ -175,7 +163,7 @@ function App() {
       </AppShell.Navbar>
 
       <AppShell.Main>
-        <ChatHistory messages={activeChat?.messages || []} viewport={viewport} />
+        <ChatHistory messages={activeChat?.messages || []} viewport={viewport} onCitationClick={handleCitationClick} />
         <ChatInput
           value={inputValue}
           onChange={setInputValue}
@@ -183,6 +171,22 @@ function App() {
           disabled={!activeChatId}
         />
       </AppShell.Main>
+
+      <Drawer
+        opened={drawerOpened}
+        onClose={() => setDrawerOpened(false)}
+        title="Source Document"
+        position="right"
+        size="50%"
+      >
+        {pdfSource && (
+          <PdfViewer
+            file={pdfSource.file}
+            pageNumber={pdfSource.pageNumber}
+            highlight={pdfSource.highlight}
+          />
+        )}
+      </Drawer>
     </AppShell>
   );
 }

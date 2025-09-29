@@ -1,13 +1,45 @@
 import { ScrollArea, Group, Avatar, Paper, Text, useComputedColorScheme } from '@mantine/core';
 import { IconRobot, IconUser } from '@tabler/icons-react';
 import type { Message } from '../types';
+import { Citation } from './Citation';
+
+import type { Source } from '../types';
 
 interface ChatHistoryProps {
   messages: Message[];
   viewport: React.RefObject<HTMLDivElement | null>;
+  onCitationClick: (source: Source) => void;
 }
 
-export function ChatHistory({ messages, viewport }: ChatHistoryProps) {
+function renderMessageContent(message: Message, onCitationClick: (source: Source) => void) {
+  const parts = [];
+  const regex = /<citation source_id="(\d+)"\s*\/?>/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(message.content)) !== null) {
+    // Add the text before the citation
+    if (match.index > lastIndex) {
+      parts.push(<Text component="span" key={`text-${lastIndex}`}>{message.content.substring(lastIndex, match.index)}</Text>);
+    }
+
+    // Add the citation
+    const sourceId = parseInt(match[1], 10);
+        parts.push(<Citation key={`citation-${match.index}`} sourceId={sourceId} sources={message.sources || []} onClick={() => onCitationClick(message.sources![sourceId])} />);
+    
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add any remaining text after the last citation
+  if (lastIndex < message.content.length) {
+    parts.push(<Text component="span" key={`text-${lastIndex}`}>{message.content.substring(lastIndex)}</Text>);
+  }
+
+  return parts;
+}
+
+
+export function ChatHistory({ messages, viewport, onCitationClick }: ChatHistoryProps) {
   const computedColorScheme = useComputedColorScheme('light');
 
   return (
@@ -32,7 +64,9 @@ export function ChatHistory({ messages, viewport }: ChatHistoryProps) {
                   color: isUser ? 'white' : 'inherit',
                 })}
               >
-                <Text size="sm">{message.content}</Text>
+                <Text size="sm">
+                  {renderMessageContent(message, onCitationClick)}
+                </Text>
               </Paper>
               {isUser && (
                 <Avatar size="md" radius="xl" color="blue">
