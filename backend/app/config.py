@@ -13,6 +13,8 @@ class Settings(BaseModel):
     ]
     system_prompt_path: str = os.getenv("SYSTEM_PROMPT_PATH", "app/prompts/system_prompt.txt")
     llm_model: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
-    database_url: str = os.getenv("DATABASE_URL", "sqlite:///./chat.db")
+    qdrant_host: str = os.getenv("QDRANT_HOST", "localhost")
+    qdrant_port: int = int(os.getenv("QDRANT_PORT", "6333"))
+    qdrant_collection_name: str = os.getenv("QDRANT_COLLECTION_NAME", "documents")
 
 settings = Settings()

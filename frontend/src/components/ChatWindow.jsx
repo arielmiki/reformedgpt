@@ -1,116 +1,51 @@
-import { useEffect, useRef, useState } from 'react'
-import { listMessages, sendMessage } from '../api'
-import Message from './Message'
+import { useRef, useState, useEffect } from 'react';
+import { Layout, Form, Input, Button, Empty } from 'antd';
+import { SendOutlined } from '@ant-design/icons';
+import Message from './Message';
 
-export default function ChatWindow({ sessionId }) {
-  const [messages, setMessages] = useState([])
-  const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
-  const listRef = useRef(null)
+const { Content, Footer } = Layout;
 
-  async function load() {
-    if (!sessionId) return
-    setLoading(true)
-    try {
-      const data = await listMessages(sessionId)
-      setMessages(data)
-    } finally {
-      setLoading(false)
-      scrollToBottom()
-    }
-  }
-
-  function scrollToBottom() {
-    requestAnimationFrame(() => {
-      listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
-    })
-  }
+export default function ChatWindow({ messages, onSend, sending, onShowPdf }) {
+  const [input, setInput] = useState('');
+  const listRef = useRef(null);
 
   useEffect(() => {
-    load()
-  }, [sessionId])
+    listRef.current?.lastElementChild?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-  async function onSubmit(e) {
-    e.preventDefault();
-    if (!input.trim() || !sessionId) return;
-
-    const userText = input;
+  function handleSubmit() {
+    if (!input.trim()) return;
+    onSend(input);
     setInput('');
-
-    const tempUserMessage = {
-      id: `tmp-u-${Date.now()}`,
-      session_id: sessionId,
-      role: 'user',
-      content: userText,
-      timestamp: new Date().toISOString(),
-    };
-
-    const tempAssistantMessage = {
-      id: `tmp-a-${Date.now()}`,
-      session_id: sessionId,
-      role: 'assistant',
-      content: '▋',
-      timestamp: new Date().toISOString(),
-    };
-
-    setMessages(prev => [...prev, tempUserMessage, tempAssistantMessage]);
-    scrollToBottom();
-
-    try {
-      await sendMessage(sessionId, userText, (data) => {
-        if (data.type === 'delta') {
-          setMessages(prev => prev.map(m => 
-            m.id === tempAssistantMessage.id 
-              ? { ...m, content: m.content === '▋' ? data.content : m.content + data.content } 
-              : m
-          ));
-        } else if (data.type === 'final') {
-          setMessages(prev => prev.map(m => 
-            m.id === tempAssistantMessage.id 
-              ? data.message 
-              : m
-          ));
-          load(); // Re-load to get correct IDs
-        }
-      });
-    } catch (e) {
-      setMessages(prev => prev.map(m => 
-        m.id === tempAssistantMessage.id 
-          ? { ...m, content: 'Error: failed to send' } 
-          : m
-      ));
-    } finally {
-      scrollToBottom();
-    }
-  }
-
-  if (!sessionId) {
-    return (
-      <div className="flex-1 flex items-center justify-center text-gray-500">
-        Select or create a chat to start.
-      </div>
-    )
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full">
-      <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-1">
-        {messages.map(m => (
-          <Message key={m.id} role={m.role} content={m.content} />
-        ))}
-        {loading && <div className="text-sm text-gray-500">Loading…</div>}
-      </div>
-      <form onSubmit={onSubmit} className="p-3 border-t border-gray-200 bg-white">
-        <div className="flex gap-2">
-          <input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">Send</button>
+    <Layout style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Content style={{ padding: '24px', overflowY: 'auto', flex: '1 1 auto' }}>
+        <div ref={listRef}>
+          {messages.length === 0 && <Empty description="No messages yet. Start the conversation!" />}
+          {messages.map((m, i) => (
+            <Message key={i} role={m.role} content={m.content} source={m.source} onShowPdf={onShowPdf} />
+          ))}
         </div>
-      </form>
-    </div>
-  )
+      </Content>
+      <Footer style={{ padding: '16px', backgroundColor: '#fff', flexShrink: 0 }}>
+        <Form onFinish={handleSubmit}>
+          <Form.Item style={{ margin: 0 }}>
+            <Input.TextArea
+              autoSize={{ minRows: 1, maxRows: 5 }}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder="Type your message..."
+              onPressEnter={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
+              disabled={sending}
+              suffix={
+                <Button type="primary" htmlType="submit" icon={<SendOutlined />} loading={sending} />
+              }
+            />
+          </Form.Item>
+        </Form>
+      </Footer>
+    </Layout>
+  );
 }

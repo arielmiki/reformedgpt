@@ -4,28 +4,13 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE || 'http://localhost:8000',
 })
 
-export async function listSessions() {
-  const res = await api.get('/api/chat/sessions')
-  return res.data
-}
-
-export async function createSession(title) {
-  const res = await api.post('/api/chat/sessions', { title })
-  return res.data
-}
-
-export async function listMessages(sessionId) {
-  const res = await api.get(`/api/chat/sessions/${sessionId}/messages`)
-  return res.data
-}
-
-export async function sendMessage(sessionId, content, onData) {
-  const response = await fetch(`${api.defaults.baseURL}/api/chat/sessions/${sessionId}/messages`, {
+export async function sendMessage(messages, onData) {
+  const response = await fetch(`${api.defaults.baseURL}/api/chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ messages }),
   });
 
   if (!response.body) {
