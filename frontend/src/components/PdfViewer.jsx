@@ -37,7 +37,7 @@ export default function PdfViewer({ file, page, highlight, onClose }) {
         <Button onClick={onClose}>Close</Button>
       </div>
       <Document
-        file={`${API_BASE_URL}/api/static/${file}`}
+        file={`${API_BASE_URL}/static/${file}`}
         onLoadSuccess={onDocumentLoadSuccess}
         loading={<Spin size="large" />}
       >

@@ -17,6 +17,4 @@ async def create_message(req: schemas.CreateMessageRequest):
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
-@router.get("/static/{filename:path}")
-async def get_static(filename: str):
-    return FileResponse(rag_service.get_static_file(filename), media_type="text/html")
+

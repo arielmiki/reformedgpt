@@ -25,9 +25,7 @@ async def generate_assistant_reply(history: List[schemas.Message]) -> AsyncGener
     # 1. Retrieve context using RAG
     context_docs = rag_service.search(user_query, k=3)
     if context_docs:
-        # We only send metadata to the frontend to save bandwidth
-        context_meta = [{'metadata': doc['metadata']} for doc in context_docs]
-        yield {"type": "context", "data": context_meta}
+        yield {"type": "context", "data": context_docs}
 
     system_prompt = load_system_prompt()
     if context_docs:

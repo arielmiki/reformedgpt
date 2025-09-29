@@ -43,7 +43,6 @@ def main():
                                 "metadata": {
                                     "source": os.path.basename(pdf_path),
                                     "page": page_num + 1,
-                                    "content": content
                                 }
                             })
         except Exception as e:

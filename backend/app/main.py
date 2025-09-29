@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.chat import router as chat_router
+from .api.static import router as static_router
+
 app = FastAPI(
     title="Chatbot API",
     description="A simple chatbot API with RAG capabilities.",
@@ -18,3 +20,4 @@ app.add_middleware(
 )
 
 app.include_router(chat_router, prefix="/api", tags=["chat"])
+app.include_router(static_router, prefix="/static", tags=["static"])
