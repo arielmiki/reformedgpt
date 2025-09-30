@@ -19,14 +19,15 @@ export function ChatList({ chats, activeChatId, onSelectChat, compact = false }:
   return (
     <>
       {sorted.map((chat) => {
+        const url = `/chat/${encodeURIComponent(chat.id)}`;
         const item = (
           <NavLink
             key={chat.id}
-            href="#"
+            href={url}
             label={compact ? undefined : <Text truncate="end">{chat.title}</Text>}
             leftSection={<IconMessageCircle size="1rem" stroke={1.5} />}
             active={chat.id === activeChatId}
-            onClick={() => onSelectChat(chat.id)}
+            onClick={(e) => { e.preventDefault(); onSelectChat(chat.id); }}
             variant="light"
             style={{ borderRadius: 8 }}
             title={chat.title}

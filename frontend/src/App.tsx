@@ -22,28 +22,76 @@ function App() {
   const [mobileNavOpened, setMobileNavOpened] = useState(false);
   const [pdfSource, setPdfSource] = useState<{ file: string; pageNumber: number; highlight: string } | null>(null);
   const isMobile = useMediaQuery('(max-width: 48em)'); // ~768px, matches Mantine sm
+  const didInitRef = useRef(false);
 
   // Load chats from local storage on initial render. Guard for React 18 StrictMode double-invoke in dev.
-  const didInitRef = useRef(false);
   useEffect(() => {
     if (didInitRef.current) return;
     didInitRef.current = true;
 
     const savedChats = localStorage.getItem('chats');
+    const parsePathForChatId = () => {
+      const path = window.location.pathname || '/';
+      const match = path.match(/^\/?chat\/([^/]+)$/);
+      return match ? decodeURIComponent(match[1]) : null;
+    };
+    // no-op helper removed; URL updates handled in selectChat()
+
     if (savedChats) {
-      const parsedChats = JSON.parse(savedChats);
-      setChats(parsedChats);
-      setActiveChatId(Object.keys(parsedChats)[0] || null);
+      const parsedChats = JSON.parse(savedChats) as Record<string, Chat>;
+      const hasUserMessage = Object.values(parsedChats as Record<string, Chat>).some((chat) =>
+        (chat.messages || []).some((m) => m.role === 'user')
+      );
+      if (hasUserMessage) {
+        setChats(parsedChats);
+        const pathId = parsePathForChatId();
+        const firstId = Object.keys(parsedChats)[0] || null;
+        const targetId = pathId && (pathId in parsedChats) ? pathId : firstId;
+        if (targetId) {
+          selectChat(targetId);
+        } else {
+          handleNewChat();
+        }
+      } else {
+        // Clean up any previously stored assistant-only placeholder chats
+        localStorage.removeItem('chats');
+        const pathId = parsePathForChatId();
+        if (pathId) {
+          selectChat(pathId);
+        } else {
+          handleNewChat();
+        }
+      }
     } else {
-      handleNewChat();
+      const pathId = parsePathForChatId();
+      if (pathId) {
+        selectChat(pathId);
+      } else {
+        handleNewChat();
+      }
     }
+
+    // Sync state on history navigation (back/forward)
+    const onPopState = () => {
+      const id = parsePathForChatId();
+      if (id) {
+        // On back/forward, only update state; do not push a new history entry
+        setActiveChatId(id);
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  // Save chats to local storage whenever they change
+  // Persist to localStorage ONLY after at least one user message exists
   useEffect(() => {
-    if (Object.keys(chats).length > 0) {
+    const hasUserMessage = Object.values(chats).some((chat) =>
+      (chat.messages || []).some((m) => m.role === 'user')
+    );
+    if (hasUserMessage) {
       localStorage.setItem('chats', JSON.stringify(chats));
     }
+    // If there are no user messages, do not write anything to localStorage
   }, [chats]);
 
   const scrollToBottom = () => {
@@ -55,21 +103,21 @@ function App() {
   }, [chats, activeChatId]);
 
   const handleNewChat = () => {
+    // Do not create a placeholder chat; only set an ID so input is enabled.
     const newChatId = uuidv4();
-    const newChat: Chat = {
-      id: newChatId,
-      title: 'New Chat',
-      messages: [
-        {
-          id: uuidv4(),
-          content: 'Hello! How can I help you today?',
-          role: 'assistant',
-        },
-      ],
-      updatedAt: Date.now(),
-    };
-    setChats((prev) => ({ ...prev, [newChatId]: newChat }));
     setActiveChatId(newChatId);
+    const next = `/chat/${encodeURIComponent(newChatId)}`;
+    if (window.location.pathname !== next) {
+      window.history.pushState({}, '', next);
+    }
+  };
+
+  const selectChat = (id: string) => {
+    setActiveChatId(id);
+    const next = `/chat/${encodeURIComponent(id)}`;
+    if (window.location.pathname !== next) {
+      window.history.pushState({}, '', next);
+    }
   };
 
   const handleCitationClick = (source: Source) => {
@@ -90,15 +138,21 @@ function App() {
       role: 'user',
     };
 
-    const updatedChats = { ...chats };
-    const activeChat = updatedChats[activeChatId];
-    const newMessages = [...activeChat.messages, userMessage];
+    const updatedChats = { ...chats } as Record<string, Chat>;
+    const existing = updatedChats[activeChatId];
+    const baseChat: Chat = existing ?? {
+      id: activeChatId,
+      title: 'New Chat',
+      messages: [],
+      updatedAt: Date.now(),
+    } as Chat;
+    const newMessages = [...baseChat.messages, userMessage];
 
     if (newMessages.filter((m) => m.role === 'user').length === 1) {
-      activeChat.title = inputValue.substring(0, 30);
+      baseChat.title = inputValue.substring(0, 30);
     }
 
-    setChats({ ...updatedChats, [activeChatId]: { ...activeChat, messages: newMessages, updatedAt: Date.now() } });
+    setChats({ ...updatedChats, [activeChatId]: { ...baseChat, messages: newMessages, updatedAt: Date.now() } });
     setInputValue('');
 
     const botMessageId = uuidv4();
@@ -149,6 +203,11 @@ function App() {
   const activeChat = activeChatId ? chats[activeChatId] : null;
   const computedColorScheme = useComputedColorScheme('light');
   const navbarWidth = 250;
+  const placeholderGreeting: Message = {
+    id: 'placeholder-greeting',
+    content: 'Hello! How can I help you today?',
+    role: 'assistant',
+  };
 
   return (
     <AppShell
@@ -196,7 +255,7 @@ function App() {
               <ChatList
                 chats={chats}
                 activeChatId={activeChatId}
-                onSelectChat={(id) => { setActiveChatId(id); if (isMobile) setMobileNavOpened(false); }}
+                onSelectChat={(id) => { selectChat(id); if (isMobile) setMobileNavOpened(false); }}
               />
             </ScrollArea>
             <Group justify="space-between" p="xs">
@@ -214,7 +273,11 @@ function App() {
             </ActionIcon>
           </Group>
         )}
-        <ChatHistory messages={activeChat?.messages || []} viewport={viewport} onCitationClick={handleCitationClick} />
+        <ChatHistory
+          messages={activeChat ? activeChat.messages : (activeChatId ? [placeholderGreeting] : [])}
+          viewport={viewport}
+          onCitationClick={handleCitationClick}
+        />
         <ChatInput
           value={inputValue}
           onChange={setInputValue}
@@ -254,7 +317,7 @@ function App() {
           </Stack>
           <Divider />
           <ScrollArea style={{ flex: 1 }} type="auto" scrollbarSize={6} offsetScrollbars>
-            <ChatList chats={chats} activeChatId={activeChatId} onSelectChat={(id) => { setActiveChatId(id); setMobileNavOpened(false); }} />
+            <ChatList chats={chats} activeChatId={activeChatId} onSelectChat={(id) => { selectChat(id); setMobileNavOpened(false); }} />
           </ScrollArea>
           <Divider />
           <ThemeSwitcher />
