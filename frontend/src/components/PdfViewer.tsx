@@ -51,12 +51,12 @@ export function PdfViewer({ file, pageNumber, highlight }: PdfViewerProps) {
         onLoadError={(e) => setError((e as Error)?.message || 'Failed to load PDF')}
       >
         <div style={{ position: 'relative', display: 'inline-block' }}>
-          <Page
+        <Page
             pageNumber={normalizedPage}
             customTextRenderer={textRenderer}
             renderTextLayer={true}
             renderAnnotationLayer={false}
-          />
+          />    
         </div>
       </Document>
       <p>
