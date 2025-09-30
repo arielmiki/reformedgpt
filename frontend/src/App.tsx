@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { AppShell, ActionIcon, Box, Drawer, useComputedColorScheme, Stack, Group, Text, Avatar, Divider, ScrollArea, Badge } from '@mantine/core';
-import { IconPlus, IconRobot, IconFileText, IconExternalLink } from '@tabler/icons-react';
+import { AppShell, ActionIcon, Box, Drawer, useComputedColorScheme, Stack, Group, Text, Avatar, Divider, ScrollArea, Badge, Button } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
+import { IconPlus, IconRobot, IconFileText, IconExternalLink, IconMenu2 } from '@tabler/icons-react';
 import { v4 as uuidv4 } from 'uuid';
 import type { Chat, Message, Source } from './types';
 import { ChatHistory } from './components/ChatHistory';
@@ -17,7 +18,10 @@ function App() {
   const [inputValue, setInputValue] = useState('');
   const viewport = useRef<HTMLDivElement>(null);
   const [drawerOpened, setDrawerOpened] = useState(false);
+  // Sidebar is fixed (no collapsible behavior)
+  const [mobileNavOpened, setMobileNavOpened] = useState(false);
   const [pdfSource, setPdfSource] = useState<{ file: string; pageNumber: number; highlight: string } | null>(null);
+  const isMobile = useMediaQuery('(max-width: 48em)'); // ~768px, matches Mantine sm
 
   // Load chats from local storage on initial render. Guard for React 18 StrictMode double-invoke in dev.
   const didInitRef = useRef(false);
@@ -144,11 +148,12 @@ function App() {
 
   const activeChat = activeChatId ? chats[activeChatId] : null;
   const computedColorScheme = useComputedColorScheme('light');
+  const navbarWidth = 250;
 
   return (
     <AppShell
       padding="md"
-      navbar={{ width: 250, breakpoint: 'sm' }}
+      navbar={isMobile ? undefined : { width: navbarWidth, breakpoint: 'sm' }}
       styles={(theme) => ({
         main: {
           height: '100vh',
@@ -158,35 +163,57 @@ function App() {
         },
       })}
     >
-      <AppShell.Navbar p="xs" withBorder>
-        <Stack gap="xs" h="100%">
-          <Group justify="space-between" p="xs">
-            <Group gap="xs">
+      {!isMobile && (
+        <AppShell.Navbar p="xs" withBorder>
+          <Stack gap="xs" h="100%">
+            <Group justify="flex-start" p="xs">
               <Avatar radius="sm" color="blue" variant="light" size={28}>
                 <IconRobot size={16} />
               </Avatar>
               <Box>
                 <Text fw={700} size="sm">ReformedAI</Text>
+                <Text size="xs" c="dimmed">Assistant</Text>
               </Box>
             </Group>
-            <ActionIcon onClick={handleNewChat} size="lg" variant="light" aria-label="New chat">
-              <IconPlus size={18} />
-            </ActionIcon>
-          </Group>
-          <Divider />
+            <Divider />
 
-          <ScrollArea style={{ flex: 1 }} type="auto" scrollbarSize={6} offsetScrollbars>
-            <ChatList chats={chats} activeChatId={activeChatId} onSelectChat={setActiveChatId} />
-          </ScrollArea>
+            {/* Primary action: New chat */}
+            <Stack gap={4} p="xs">
+              <Button
+                onClick={handleNewChat}
+                leftSection={<IconPlus size={16} />}
+                variant="light"
+                radius="md"
+                fullWidth
+                size="sm"
+              >
+                New chat
+              </Button>
+            </Stack>
 
-          <Divider />
-          <Group justify="space-between" p="xs">
-            <ThemeSwitcher />
-          </Group>
-        </Stack>
-      </AppShell.Navbar>
+            {/* Chats list */}
+            <ScrollArea style={{ flex: 1 }} type="auto" scrollbarSize={6} offsetScrollbars>
+              <ChatList
+                chats={chats}
+                activeChatId={activeChatId}
+                onSelectChat={(id) => { setActiveChatId(id); if (isMobile) setMobileNavOpened(false); }}
+              />
+            </ScrollArea>
+            <Group justify="space-between" p="xs">
+              <ThemeSwitcher />
+            </Group>
+          </Stack>
+        </AppShell.Navbar>
+      )}
 
       <AppShell.Main>
+        {isMobile && (
+          <Group justify="space-between" mb="xs">
+            <ActionIcon size="lg" variant="light" onClick={() => setMobileNavOpened(true)} aria-label="Open menu">
+              <IconMenu2 size={18} />
+            </ActionIcon>
+          </Group>
+        )}
         <ChatHistory messages={activeChat?.messages || []} viewport={viewport} onCitationClick={handleCitationClick} />
         <ChatInput
           value={inputValue}
@@ -196,11 +223,49 @@ function App() {
         />
       </AppShell.Main>
 
+      {/* Mobile left drawer for chats when navbar is hidden */}
+      <Drawer
+        opened={mobileNavOpened}
+        onClose={() => setMobileNavOpened(false)}
+        position="left"
+        size={280}
+        radius="md"
+        withCloseButton
+        overlayProps={{ blur: 2, opacity: 0.2 }}
+        title={
+          <Group gap="xs">
+            <IconRobot size={16} />
+            <Text fw={600} size="sm">ReformedAI</Text>
+          </Group>
+        }
+      >
+        <Stack gap="xs" h="100%">
+          <Stack gap={4} p="xs">
+            <Button
+              onClick={handleNewChat}
+              leftSection={<IconPlus size={16} />}
+              variant="light"
+              radius="md"
+              fullWidth
+              size="sm"
+            >
+              New chat
+            </Button>
+          </Stack>
+          <Divider />
+          <ScrollArea style={{ flex: 1 }} type="auto" scrollbarSize={6} offsetScrollbars>
+            <ChatList chats={chats} activeChatId={activeChatId} onSelectChat={(id) => { setActiveChatId(id); setMobileNavOpened(false); }} />
+          </ScrollArea>
+          <Divider />
+          <ThemeSwitcher />
+        </Stack>
+      </Drawer>
+
       <Drawer
         opened={drawerOpened}
         onClose={() => setDrawerOpened(false)}
         position="right"
-        size="50%"
+        size={isMobile ? '100%' : '50%'}
         radius="md"
         withCloseButton
         overlayProps={{ blur: 2, opacity: 0.2 }}
