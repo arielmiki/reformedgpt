@@ -1,0 +1,41 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reformedgpt-be
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8004
+    targetPort: 8000
+  selector:
+    app: reformedgpt-be
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reformedgpt-be
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reformedgpt-be
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: reformedgpt-be
+    spec:
+      containers:
+      - name: reformedgpt-be
+        image: registry.arielmiki.com/arielmiki/reformedgpt-be:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        envFrom:
+        - secretRef:
+            name: reformedgpt-be-secret # kubectl create secret generic reformedgpt-be-secret --from-env-file=prod.env
+            
+  

@@ -1,0 +1,37 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reformedgpt-fe
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8005
+    targetPort: 80
+  selector:
+    app: reformedgpt-fe
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reformedgpt-fe
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reformedgpt-fe
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: reformedgpt-fe
+    spec:
+      containers:
+      - name: reformedgpt-fe
+        image: registry.arielmiki.com/arielmiki/reformedgpt-fe:latest
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 80
+  

@@ -1,11 +1,14 @@
 import type { Message, Source } from '../types';
 
+// API base URL from Vite env; fallback to localhost for dev
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000';
+
 export type ChatEvent = 
   | { type: 'context'; data: Source[] }
   | { type: 'delta'; data: string };
 
 export async function* streamChat(messages: Omit<Message, 'id'>[]): AsyncGenerator<ChatEvent> {
-  const response = await fetch('http://localhost:8000/api/chat', {
+  const response = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

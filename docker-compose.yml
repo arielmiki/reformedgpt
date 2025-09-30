@@ -1,16 +1,6 @@
 version: '3.8'
 
 services:
-  mongo:
-    image: mongo:5.0
-    container_name: mongo
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-    networks:
-      - app-network
-
   qdrant:
     image: qdrant/qdrant:v1.7.4
     container_name: qdrant
@@ -34,10 +24,8 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      - DATABASE_URL=mongodb://mongo:27017/
       - QDRANT_HOST=qdrant
     depends_on:
-      - mongo
       - qdrant
     networks:
       - app-network
@@ -59,5 +47,4 @@ networks:
     driver: bridge
 
 volumes:
-  mongo_data:
   qdrant_data:

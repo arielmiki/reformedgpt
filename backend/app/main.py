@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .api.chat import router as chat_router
 from .api.static import router as static_router
+from .config import settings
 
 app = FastAPI(
     title="Chatbot API",
@@ -14,10 +15,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     # Explicitly list dev frontend origins to ensure ACAO header is set
-    allow_origins=[
-        "http://localhost:5174",
-        "http://localhost:5173",
-    ],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
