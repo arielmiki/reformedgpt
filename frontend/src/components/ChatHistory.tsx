@@ -1,4 +1,4 @@
-import { ScrollArea, Group, Avatar, Paper, Text, useComputedColorScheme } from '@mantine/core';
+import { ScrollArea, Group, Avatar, Paper, useComputedColorScheme } from '@mantine/core';
 import { IconRobot, IconUser } from '@tabler/icons-react';
 import type { Message } from '../types';
 import { Citation } from './Citation';
@@ -24,14 +24,58 @@ function renderMessageContent(message: Message, onCitationClick: (source: Source
       remarkPlugins={[remarkGfm]}
       rehypePlugins={[rehypeRaw as any]}
       components={{
-        // Typography
-        p: ({ node, ...props }: any) => <Text component="p" size="sm" m={0} {...props} />,
-        h1: ({ node, ...props }: any) => <Text component="h1" fw={700} size="lg" {...props} />,
-        h2: ({ node, ...props }: any) => <Text component="h2" fw={700} size="md" {...props} />,
-        h3: ({ node, ...props }: any) => <Text component="h3" fw={600} size="sm" {...props} />,
+        // Typography (inherit font size from container for consistency)
+        p: ({ node, ...props }: any) => <p style={{ margin: 0 }} {...props} />,
+        h1: ({ node, ...props }: any) => (
+          <h1 style={{ fontSize: '1.25em', fontWeight: 700, margin: '0.5em 0 0.35em' }} {...props} />
+        ),
+        h2: ({ node, ...props }: any) => (
+          <h2 style={{ fontSize: '1.15em', fontWeight: 700, margin: '0.45em 0 0.3em' }} {...props} />
+        ),
+        h3: ({ node, ...props }: any) => (
+          <h3 style={{ fontSize: '1.05em', fontWeight: 600, margin: '0.4em 0 0.25em' }} {...props} />
+        ),
         ul: ({ node, ...props }: any) => <ul style={{ paddingLeft: 20, marginTop: 4, marginBottom: 4 }} {...props} />,
         ol: ({ node, ...props }: any) => <ol style={{ paddingLeft: 20, marginTop: 4, marginBottom: 4 }} {...props} />,
         li: ({ node, ...props }: any) => <li style={{ marginTop: 2, marginBottom: 2 }} {...props} />,
+        // Tables
+        table: ({ node, ...props }: any) => (
+          <div style={{ overflowX: 'auto', margin: '8px 0' }}>
+            <table
+              style={{
+                borderCollapse: 'collapse',
+                width: '100%',
+                minWidth: 400,
+              }}
+              {...props}
+            />
+          </div>
+        ),
+        thead: ({ node, ...props }: any) => <thead {...props} />,
+        tbody: ({ node, ...props }: any) => <tbody {...props} />,
+        tr: ({ node, ...props }: any) => <tr {...props} />,
+        th: ({ node, ...props }: any) => (
+          <th
+            style={{
+              border: '1px solid currentColor',
+              padding: '6px 8px',
+              textAlign: 'left',
+              fontWeight: 700,
+              whiteSpace: 'nowrap',
+            }}
+            {...props}
+          />
+        ),
+        td: ({ node, ...props }: any) => (
+          <td
+            style={{
+              border: '1px solid currentColor',
+              padding: '6px 8px',
+              verticalAlign: 'top',
+            }}
+            {...props}
+          />
+        ),
         code: ({ inline, children, ...props }: any) => (
           <code
             style={{
@@ -94,6 +138,7 @@ export function ChatHistory({ messages, viewport, onCitationClick }: ChatHistory
                     ? (computedColorScheme === 'dark' ? theme.colors.blue[9] : theme.colors.blue[5])
                     : (computedColorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[2]),
                   color: isUser ? 'white' : 'inherit',
+                  fontSize: theme.fontSizes.sm,
                 })}
               >
                 {renderMessageContent(message, onCitationClick)}
