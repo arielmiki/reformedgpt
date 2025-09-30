@@ -23,13 +23,15 @@ interface PdfViewerProps {
 
 export function PdfViewer({ file, pageNumber, highlight }: PdfViewerProps) {
 
-  const [numPages, setNumPages] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [zoom, setZoom] = useState<number>(1);
+  const [pageAspect, setPageAspect] = useState<number | null>(null); // width / height at scale=1
+  const [availableHeight, setAvailableHeight] = useState<number>(0);
 
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    setNumPages(numPages);
+  function onDocumentLoadSuccess(_: { numPages: number }) {
+    // no-op for now
   }
 
   // Resize observer to make the page fit the available width (great for mobile)
@@ -41,13 +43,35 @@ export function PdfViewer({ file, pageNumber, highlight }: PdfViewerProps) {
         const cr = entry.contentRect;
         // Add small padding allowance
         setContainerWidth(Math.max(0, Math.floor(cr.width)));
+        const top = el.getBoundingClientRect().top;
+        setAvailableHeight(Math.max(0, Math.floor(window.innerHeight - top - 8))); // small padding
       }
     });
     ro.observe(el);
     // Initialize immediately
     setContainerWidth(el.clientWidth);
+    const top = el.getBoundingClientRect().top;
+    setAvailableHeight(Math.max(0, Math.floor(window.innerHeight - top - 8)));
+
+    const onWinResize = () => {
+      const t = el.getBoundingClientRect().top;
+      setAvailableHeight(Math.max(0, Math.floor(window.innerHeight - t - 8)));
+    };
+    window.addEventListener('resize', onWinResize);
+    window.addEventListener('orientationchange', onWinResize as any);
     return () => ro.disconnect();
   }, []);
+
+  // When on small containers, start zoomed-in for readability
+  useEffect(() => {
+    if (containerWidth > 0 && availableHeight > 0 && pageAspect) {
+      // Fit whole page in view by default (width constrained by both container and height)
+      const fitWidthFromHeight = availableHeight * pageAspect;
+      const baseWidth = Math.min(containerWidth, fitWidthFromHeight);
+      // Set zoom so base calculation (with zoom=1) fits page exactly; user can adjust afterward
+      setZoom(1);
+    }
+  }, [containerWidth, availableHeight, pageAspect]);
 
   const textRenderer = (textItem: any) => {
     const raw = String(textItem?.str ?? '');
@@ -60,7 +84,15 @@ export function PdfViewer({ file, pageNumber, highlight }: PdfViewerProps) {
 
   // Normalize page number: ensure 1-based and within bounds
   const normalizedPage = Math.max(1, pageNumber  || 1);
-  const pageWidth = containerWidth > 0 ? containerWidth : undefined;
+  const baseWidth = (() => {
+    if (containerWidth <= 0) return 0;
+    if (availableHeight > 0 && pageAspect) {
+      const fitWidthFromHeight = availableHeight * pageAspect;
+      return Math.min(containerWidth, fitWidthFromHeight);
+    }
+    return containerWidth;
+  })();
+  const pageWidth = baseWidth > 0 ? Math.min(1600, Math.floor(baseWidth * zoom)) : undefined;
 
   return (
     <div
@@ -79,6 +111,35 @@ export function PdfViewer({ file, pageNumber, highlight }: PdfViewerProps) {
         loading={null}
       >
         <div style={{ position: 'relative', display: 'block', width: '100%', margin: 0 }}>
+          {/* Zoom controls */}
+          <div
+            style={{
+              position: 'sticky',
+              top: 8,
+              display: 'flex',
+              gap: 8,
+              justifyContent: 'flex-end',
+              padding: '4px 0',
+              zIndex: 1,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setZoom((z) => Math.max(0.75, +(z - 0.1).toFixed(2)))}
+              style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #ccc', background: 'white' }}
+              aria-label="Zoom out"
+            >
+              −
+            </button>
+            <button
+              type="button"
+              onClick={() => setZoom((z) => Math.min(2, +(z + 0.1).toFixed(2)))}
+              style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #ccc', background: 'white' }}
+              aria-label="Zoom in"
+            >
+              +
+            </button>
+          </div>
           <Page
             pageNumber={normalizedPage}
             customTextRenderer={textRenderer}
@@ -87,6 +148,12 @@ export function PdfViewer({ file, pageNumber, highlight }: PdfViewerProps) {
             width={pageWidth}
             loading={null}
             className="pdf-page"
+            onLoadSuccess={(page) => {
+              try {
+                const vp = page.getViewport({ scale: 1 });
+                if (vp && vp.width && vp.height) setPageAspect(vp.width / vp.height);
+              } catch {}
+            }}
           />
         </div>
       </Document>

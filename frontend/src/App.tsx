@@ -348,7 +348,7 @@ function App() {
               <Text size="xs" c="dimmed" truncate="end" style={{ maxWidth: '80%' }}>
                 {pdfSource.file}
               </Text>
-              <a href={`http://localhost:8000/static/${pdfSource.file}`} target="_blank" rel="noreferrer" aria-label="Open in new tab">
+              <a href={`http://localhost:8000/static/${pdfSource.file}#page=${pdfSource.pageNumber}`} target="_blank" rel="noreferrer" aria-label="Open in new tab at this page">
                 <ActionIcon variant="subtle" size="sm">
                   <IconExternalLink size={16} />
                 </ActionIcon>
