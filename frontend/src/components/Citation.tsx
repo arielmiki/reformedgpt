@@ -1,4 +1,4 @@
-import { Popover, Text } from '@mantine/core';
+import { Text } from '@mantine/core';
 import type { Source } from '../types';
 
 interface CitationProps {
@@ -11,17 +11,19 @@ export function Citation({ sourceId, sources, onClick }: CitationProps) {
   const source = sources[sourceId];
 
   if (!source) {
-    return <Text component="span"> (Source not found)</Text>;
+    return <Text component="sup" mx={2}>[?]</Text>;
   }
 
   return (
-    <Popover width={400} withArrow shadow="md">
-     
-        <Text component="span" c="blue" fw={700} style={{ cursor: 'pointer' }} onClick={onClick}>
-          [{sourceId + 1}]
-        </Text>
-    
-  
-    </Popover>
+    <Text
+      component="sup"
+      c="blue"
+      fw={700}
+      mx={2}
+      style={{ cursor: 'pointer', display: 'inline' }}
+      onClick={onClick}
+    >
+      [{sourceId + 1}]
+    </Text>
   );
 }

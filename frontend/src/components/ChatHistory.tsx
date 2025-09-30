@@ -4,6 +4,9 @@ import type { Message } from '../types';
 import { Citation } from './Citation';
 
 import type { Source } from '../types';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 interface ChatHistoryProps {
   messages: Message[];
@@ -13,51 +16,58 @@ interface ChatHistoryProps {
 
 function renderMessageContent(message: Message, onCitationClick: (source: Source) => void) {
   const content = message?.content ?? '';
-  const parts: React.ReactNode[] = [];
-  // Supports both self-closing: <citation source_id="0" />
-  // and paired tags:        <citation source_id="0">...ignored children...</citation>
-  const regex = /<citation\s+source_id="(\d+)">\s*([\s\S]*?)\s*<\/citation>|<citation\s+source_id="(\d+)"\s*\>/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
+  const sources = message.sources || [];
 
-  while ((match = regex.exec(content)) !== null) {
-    // Add the text before the citation
-    if (match.index > lastIndex) {
-      parts.push(
-        <Text component="span" key={`text-${lastIndex}`}>
-          {content.substring(lastIndex, match.index)}
-        </Text>
-      );
-    }
-
-    // Add the citation
-    const sourceId = parseInt((match[1] ?? match[3]) as string, 10);
-    const sources = message.sources || [];
-    parts.push(
-      <Citation
-        key={`citation-${match.index}`}
-        sourceId={sourceId}
-        sources={sources}
-        onClick={() => {
-          const src = sources[sourceId];
-          if (src) onCitationClick(src);
-        }}
-      />
-    );
-
-    lastIndex = match.index + match[0].length;
-  }
-
-  // Add any remaining text after the last citation
-  if (lastIndex < content.length) {
-    parts.push(
-      <Text component="span" key={`text-${lastIndex}`}>
-        {content.substring(lastIndex)}
-      </Text>
-    );
-  }
-
-  return parts;
+  // Render whole message once to avoid paragraph breaks around inline citations
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      rehypePlugins={[rehypeRaw as any]}
+      components={{
+        // Typography
+        p: ({ node, ...props }: any) => <Text component="p" size="sm" m={0} {...props} />,
+        h1: ({ node, ...props }: any) => <Text component="h1" fw={700} size="lg" {...props} />,
+        h2: ({ node, ...props }: any) => <Text component="h2" fw={700} size="md" {...props} />,
+        h3: ({ node, ...props }: any) => <Text component="h3" fw={600} size="sm" {...props} />,
+        ul: ({ node, ...props }: any) => <ul style={{ paddingLeft: 20, marginTop: 4, marginBottom: 4 }} {...props} />,
+        ol: ({ node, ...props }: any) => <ol style={{ paddingLeft: 20, marginTop: 4, marginBottom: 4 }} {...props} />,
+        li: ({ node, ...props }: any) => <li style={{ marginTop: 2, marginBottom: 2 }} {...props} />,
+        code: ({ inline, children, ...props }: any) => (
+          <code
+            style={{
+              background: 'rgba(0,0,0,0.08)',
+              padding: inline ? '0 4px' : '8px',
+              display: inline ? 'inline' : 'block',
+              borderRadius: 4,
+              overflowX: 'auto',
+              whiteSpace: inline ? 'pre-wrap' : 'pre',
+            }}
+            {...props}
+          >
+            {children}
+          </code>
+        ),
+        // Custom inline citation element from model output: <citation source_id="0" />
+        citation: ({ node }: any) => {
+          const propsAny = (node as any)?.properties || {};
+          const sidStr = propsAny['source_id'] ?? propsAny['sourceId'] ?? propsAny['data-source-id'];
+          const sourceId = Number.parseInt(String(sidStr ?? ''), 10);
+          return (
+            <Citation
+              sourceId={Number.isFinite(sourceId) ? sourceId : 0}
+              sources={sources}
+              onClick={() => {
+                const src = sources[sourceId];
+                if (src) onCitationClick(src);
+              }}
+            />
+          );
+        },
+      } as any}
+    >
+      {content}
+    </ReactMarkdown>
+  );
 }
 
 
@@ -86,9 +96,7 @@ export function ChatHistory({ messages, viewport, onCitationClick }: ChatHistory
                   color: isUser ? 'white' : 'inherit',
                 })}
               >
-                <Text size="sm">
-                  {renderMessageContent(message, onCitationClick)}
-                </Text>
+                {renderMessageContent(message, onCitationClick)}
               </Paper>
               {isUser && (
                 <Avatar size="md" radius="xl" color="blue">
@@ -102,3 +110,4 @@ export function ChatHistory({ messages, viewport, onCitationClick }: ChatHistory
     </ScrollArea>
   );
 }
+
