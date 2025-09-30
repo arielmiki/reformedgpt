@@ -40,12 +40,12 @@ function renderMessageContent(message: Message, onCitationClick: (source: Source
         li: ({ node, ...props }: any) => <li style={{ marginTop: 2, marginBottom: 2 }} {...props} />,
         // Tables
         table: ({ node, ...props }: any) => (
-          <div style={{ overflowX: 'auto', margin: '8px 0' }}>
+          <div style={{ overflowX: 'auto', margin: '8px 0', width: '100%' }}>
             <table
               style={{
                 borderCollapse: 'collapse',
                 width: '100%',
-                minWidth: 400,
+                tableLayout: 'fixed',
               }}
               {...props}
             />
@@ -61,7 +61,10 @@ function renderMessageContent(message: Message, onCitationClick: (source: Source
               padding: '6px 8px',
               textAlign: 'left',
               fontWeight: 700,
-              whiteSpace: 'nowrap',
+              whiteSpace: 'normal',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere',
+              maxWidth: '1px',
             }}
             {...props}
           />
@@ -72,6 +75,10 @@ function renderMessageContent(message: Message, onCitationClick: (source: Source
               border: '1px solid currentColor',
               padding: '6px 8px',
               verticalAlign: 'top',
+              whiteSpace: 'normal',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere',
+              maxWidth: '1px',
             }}
             {...props}
           />

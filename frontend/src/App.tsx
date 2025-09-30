@@ -357,9 +357,8 @@ function App() {
             <Box style={{
               border: '1px solid var(--mantine-color-gray-3)',
               borderRadius: 8,
-              overflow: 'auto',
-              background: 'var(--mantine-color-body)',
-              maxHeight: 'calc(100vh - 220px)'
+              overflow: 'visible',
+              background: 'var(--mantine-color-body)'
             }}>
               <PdfViewer
                 file={pdfSource.file}
