@@ -22,4 +22,6 @@ export interface Chat {
   id: string;
   title: string;
   messages: Message[];
+  /** unix ms timestamp of last activity */
+  updatedAt?: number;
 }

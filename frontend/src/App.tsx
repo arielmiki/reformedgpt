@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { AppShell, ActionIcon, Box, Drawer, useComputedColorScheme } from '@mantine/core';
-import { IconPlus } from '@tabler/icons-react';
+import { AppShell, ActionIcon, Box, Drawer, useComputedColorScheme, Stack, Group, Text, Avatar, Divider, ScrollArea, Badge } from '@mantine/core';
+import { IconPlus, IconRobot, IconFileText, IconExternalLink } from '@tabler/icons-react';
 import { v4 as uuidv4 } from 'uuid';
 import type { Chat, Message, Source } from './types';
 import { ChatHistory } from './components/ChatHistory';
@@ -19,8 +19,12 @@ function App() {
   const [drawerOpened, setDrawerOpened] = useState(false);
   const [pdfSource, setPdfSource] = useState<{ file: string; pageNumber: number; highlight: string } | null>(null);
 
-  // Load chats from local storage on initial render
+  // Load chats from local storage on initial render. Guard for React 18 StrictMode double-invoke in dev.
+  const didInitRef = useRef(false);
   useEffect(() => {
+    if (didInitRef.current) return;
+    didInitRef.current = true;
+
     const savedChats = localStorage.getItem('chats');
     if (savedChats) {
       const parsedChats = JSON.parse(savedChats);
@@ -58,6 +62,7 @@ function App() {
           role: 'assistant',
         },
       ],
+      updatedAt: Date.now(),
     };
     setChats((prev) => ({ ...prev, [newChatId]: newChat }));
     setActiveChatId(newChatId);
@@ -89,7 +94,7 @@ function App() {
       activeChat.title = inputValue.substring(0, 30);
     }
 
-    setChats({ ...updatedChats, [activeChatId]: { ...activeChat, messages: newMessages } });
+    setChats({ ...updatedChats, [activeChatId]: { ...activeChat, messages: newMessages, updatedAt: Date.now() } });
     setInputValue('');
 
     const botMessageId = uuidv4();
@@ -105,6 +110,7 @@ function App() {
             content: '...',
           },
         ],
+        updatedAt: Date.now(),
       },
     }));
 
@@ -121,7 +127,7 @@ function App() {
             const newMsgs = prev[activeChatId].messages.map((msg) =>
               msg.id === botMessageId ? { ...msg, content, sources: currentSources } : msg
             );
-            return { ...prev, [activeChatId]: { ...prev[activeChatId], messages: newMsgs } };
+            return { ...prev, [activeChatId]: { ...prev[activeChatId], messages: newMsgs, updatedAt: Date.now() } };
           });
         }
       }
@@ -131,7 +137,7 @@ function App() {
         const newMsgs = prev[activeChatId].messages.map((msg) =>
           msg.id === botMessageId ? { ...msg, content: 'Error: Could not connect to the bot.' } : msg
         );
-        return { ...prev, [activeChatId]: { ...prev[activeChatId], messages: newMsgs } };
+        return { ...prev, [activeChatId]: { ...prev[activeChatId], messages: newMsgs, updatedAt: Date.now() } };
       });
     }
   };
@@ -152,14 +158,32 @@ function App() {
         },
       })}
     >
-      <AppShell.Navbar p="xs">
-        <ActionIcon onClick={handleNewChat} size="lg" variant="default" mb="md">
-          <IconPlus size={18} />
-        </ActionIcon>
-        <ChatList chats={chats} activeChatId={activeChatId} onSelectChat={setActiveChatId} />
-        <Box style={{ position: 'absolute', bottom: 20, left: 10, right: 10 }}>
-          <ThemeSwitcher />
-        </Box>
+      <AppShell.Navbar p="xs" withBorder>
+        <Stack gap="xs" h="100%">
+          <Group justify="space-between" p="xs">
+            <Group gap="xs">
+              <Avatar radius="sm" color="blue" variant="light" size={28}>
+                <IconRobot size={16} />
+              </Avatar>
+              <Box>
+                <Text fw={700} size="sm">ReformedAI</Text>
+              </Box>
+            </Group>
+            <ActionIcon onClick={handleNewChat} size="lg" variant="light" aria-label="New chat">
+              <IconPlus size={18} />
+            </ActionIcon>
+          </Group>
+          <Divider />
+
+          <ScrollArea style={{ flex: 1 }} type="auto" scrollbarSize={6} offsetScrollbars>
+            <ChatList chats={chats} activeChatId={activeChatId} onSelectChat={setActiveChatId} />
+          </ScrollArea>
+
+          <Divider />
+          <Group justify="space-between" p="xs">
+            <ThemeSwitcher />
+          </Group>
+        </Stack>
       </AppShell.Navbar>
 
       <AppShell.Main>
@@ -175,16 +199,47 @@ function App() {
       <Drawer
         opened={drawerOpened}
         onClose={() => setDrawerOpened(false)}
-        title={`Source Document`}
         position="right"
         size="50%"
+        radius="md"
+        withCloseButton
+        overlayProps={{ blur: 2, opacity: 0.2 }}
+        title={
+          <Group gap="xs">
+            <IconFileText size={16} />
+            <Text fw={600} size="sm">Source document</Text>
+            {pdfSource && (
+              <Badge size="xs" variant="light">Page {pdfSource.pageNumber}</Badge>
+            )}
+          </Group>
+        }
       >
         {pdfSource && (
-          <PdfViewer
-            file={pdfSource.file}
-            pageNumber={pdfSource.pageNumber}
-            highlight={pdfSource.highlight}
-          />
+          <Stack gap="xs">
+            <Group justify="space-between" gap="xs">
+              <Text size="xs" c="dimmed" truncate="end" style={{ maxWidth: '80%' }}>
+                {pdfSource.file}
+              </Text>
+              <a href={`http://localhost:8000/static/${pdfSource.file}`} target="_blank" rel="noreferrer" aria-label="Open in new tab">
+                <ActionIcon variant="subtle" size="sm">
+                  <IconExternalLink size={16} />
+                </ActionIcon>
+              </a>
+            </Group>
+            <Box style={{
+              border: '1px solid var(--mantine-color-gray-3)',
+              borderRadius: 8,
+              overflow: 'hidden',
+              background: 'var(--mantine-color-body)',
+              height: 'calc(100vh - 180px)'
+            }}>
+              <PdfViewer
+                file={pdfSource.file}
+                pageNumber={pdfSource.pageNumber}
+                highlight={pdfSource.highlight}
+              />
+            </Box>
+          </Stack>
         )}
       </Drawer>
     </AppShell>

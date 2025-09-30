@@ -1,4 +1,4 @@
-import { ScrollArea, NavLink, Text } from '@mantine/core';
+import { NavLink, Text } from '@mantine/core';
 import { IconMessageCircle } from '@tabler/icons-react';
 import type { Chat } from '../types';
 
@@ -9,9 +9,15 @@ interface ChatListProps {
 }
 
 export function ChatList({ chats, activeChatId, onSelectChat }: ChatListProps) {
+  const sorted = Object.values(chats).sort((a: Chat, b: Chat) => {
+    const at = a.updatedAt ?? 0;
+    const bt = b.updatedAt ?? 0;
+    return bt - at; // newest first
+  });
+
   return (
-    <ScrollArea style={{ flex: 1 }}>
-      {Object.values(chats).map((chat) => (
+    <>
+      {sorted.map((chat) => (
         <NavLink
           key={chat.id}
           href="#"
@@ -21,6 +27,6 @@ export function ChatList({ chats, activeChatId, onSelectChat }: ChatListProps) {
           onClick={() => onSelectChat(chat.id)}
         />
       ))}
-    </ScrollArea>
+    </>
   );
 }
