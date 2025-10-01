@@ -13,9 +13,9 @@ from app.config import settings
 # Example provided: {"insitutes": "https://ratrekt.s3.ap-southeast-1.amazonaws.com/institutes.pdf"}
 RESOURCES = {
     "insitutes": "https://ratrekt-bucket.s3.ap-southeast-1.amazonaws.com/institutes.pdf",
-    "confessions": "https://ratrekt-bucket.s3.ap-southeast-1.amazonaws.com/confessions.pdf",
-    "city_of_god": "https://ratrekt-bucket.s3.ap-southeast-1.amazonaws.com/city_of_god.pdf",
-    "mortification_of_sin": "https://ratrekt-bucket.s3.ap-southeast-1.amazonaws.com/mortification_of_sin.pdf",
+    # "confessions": "https://ratrekt-bucket.s3.ap-southeast-1.amazonaws.com/confessions.pdf",
+    # "city_of_god": "https://ratrekt-bucket.s3.ap-southeast-1.amazonaws.com/city_of_god.pdf",
+    # "mortification_of_sin": "https://ratrekt-bucket.s3.ap-southeast-1.amazonaws.com/mortification_of_sin.pdf",
     "sovereignity_of_god": "https://ratrekt-bucket.s3.ap-southeast-1.amazonaws.com/sovereignity_of_god.pdf",
 }
 DATA_DIR = "./data"
