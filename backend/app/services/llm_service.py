@@ -23,7 +23,7 @@ async def generate_assistant_reply(history: List[schemas.Message]) -> AsyncGener
         return
 
     # 1. Retrieve context using RAG
-    context_docs = rag_service.search(user_query, k=10)
+    context_docs = rag_service.search(user_query, k=20)
     if context_docs:
         yield {"type": "context", "data": context_docs}
 

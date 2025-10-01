@@ -2,12 +2,12 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: reformedgpt
+  name: reformed-ai
   annotations:
     ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   rules:
-  - host: reformedgpt.arielmiki.com
+  - host: reformed-ai.chat
     http:
       paths:
       - path: /api
@@ -17,7 +17,7 @@ spec:
             name: reformedgpt-be
             port:
               number: 8004
-  - host: reformedgpt.arielmiki.com
+  - host: reformed-ai.chat
     http:
       paths:
       - path: /
