@@ -22,22 +22,51 @@ export async function* streamChat(messages: Omit<Message, 'id'>[]): AsyncGenerat
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
+  let buffer = '';
+  let eventData = '';
 
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
 
-    const chunk = decoder.decode(value, { stream: true });
-    const eventLines = chunk.split('\n\n').filter(line => line.startsWith('data:'));
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() ?? '';
 
-    for (const line of eventLines) {
-      const jsonStr = line.replace('data: ', '');
-      try {
-        const event = JSON.parse(jsonStr) as ChatEvent;
-        yield event;
-      } catch (e) {
-        console.error('Failed to parse SSE event:', jsonStr);
+    for (const rawLine of lines) {
+      const line = rawLine; // already split without newline characters
+
+      if (line === '') {
+        if (eventData) {
+          const jsonStr = eventData;
+          try {
+            const event = JSON.parse(jsonStr) as ChatEvent;
+            yield event;
+          } catch (e) {
+            console.error('Failed to parse SSE event:', jsonStr, e);
+          }
+          eventData = '';
+        }
+        continue;
       }
+
+      if (line.startsWith(':')) continue;
+
+      if (line.startsWith('data:')) {
+        const dataPart = line.slice(5).replace(/^\s/, '');
+        eventData = eventData ? `${eventData}\n${dataPart}` : dataPart;
+        continue;
+      }
+    }
+  }
+
+  if (eventData) {
+    const jsonStr = eventData;
+    try {
+      const event = JSON.parse(jsonStr) as ChatEvent;
+      yield event;
+    } catch (e) {
+      console.error('Failed to parse SSE event at stream end:', jsonStr, e);
     }
   }
 }
