@@ -298,7 +298,7 @@ function App() {
       <Drawer
         opened={mobileNavOpened}
         onClose={() => setMobileNavOpened(false)}
-        position="left"
+        position="right"
         size={280}
         radius="md"
         withCloseButton
