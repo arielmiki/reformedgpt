@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { AppShell, ActionIcon, Box, Drawer, useComputedColorScheme, Stack, Group, Text, Avatar, Divider, ScrollArea, Badge, Button } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { IconPlus, IconRobot, IconFileText, IconExternalLink, IconMenu2 } from '@tabler/icons-react';
+import { IconPlus, IconFileText, IconExternalLink, IconMenu2 } from '@tabler/icons-react';
 import { v4 as uuidv4 } from 'uuid';
 import type { Chat, Message, Source } from './types';
 import { ChatHistory } from './components/ChatHistory';
@@ -216,9 +216,10 @@ function App() {
       navbar={isMobile ? undefined : { width: navbarWidth, breakpoint: 'sm' }}
       styles={(theme) => ({
         main: {
-          height: '100vh',
+          height: '100dvh',
           display: 'flex',
           flexDirection: 'column',
+          overflow: 'hidden',
           backgroundColor: computedColorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0],
         },
       })}
@@ -227,9 +228,7 @@ function App() {
         <AppShell.Navbar p="xs" withBorder>
           <Stack gap="xs" h="100%">
             <Group justify="flex-start" p="xs">
-              <Avatar radius="sm" color="blue" variant="light" size={28}>
-                <IconRobot size={16} />
-              </Avatar>
+              <Avatar radius="sm" size={28} src="/favicon.ico" alt="ReformedAI logo" />
               <Box>
                 <Text fw={700} size="sm">ReformedAI</Text>
               </Box>
@@ -268,6 +267,10 @@ function App() {
       <AppShell.Main>
         {isMobile && (
           <Group justify="space-between" mb="xs">
+            <Group gap="xs">
+              <Avatar radius="sm" size={28} src="/favicon.ico" alt="ReformedAI logo" />
+              <Text fw={700} size="sm">ReformedAI</Text>
+            </Group>
             <ActionIcon size="lg" variant="light" onClick={() => setMobileNavOpened(true)} aria-label="Open menu">
               <IconMenu2 size={18} />
             </ActionIcon>
@@ -302,7 +305,7 @@ function App() {
         overlayProps={{ blur: 2, opacity: 0.2 }}
         title={
           <Group gap="xs">
-            <IconRobot size={16} />
+            <Avatar size={16} radius="sm" src="/favicon.ico" alt="ReformedAI logo" />
             <Text fw={600} size="sm">ReformedAI</Text>
           </Group>
         }
