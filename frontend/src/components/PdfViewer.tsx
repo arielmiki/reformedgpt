@@ -22,7 +22,7 @@ interface PdfViewerProps {
   highlight: string;
 }
 
-export function PdfViewer({ file, pageNumber, highlight, url }: PdfViewerProps) {
+export function PdfViewer({ pageNumber, highlight, url }: PdfViewerProps) {
 
   const [error, setError] = useState<string | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(0);
@@ -66,9 +66,8 @@ export function PdfViewer({ file, pageNumber, highlight, url }: PdfViewerProps) 
   // When on small containers, start zoomed-in for readability
   useEffect(() => {
     if (containerWidth > 0 && availableHeight > 0 && pageAspect) {
-      // Fit whole page in view by default (width constrained by both container and height)
-      const fitWidthFromHeight = availableHeight * pageAspect;
-      // Set zoom so base calculation (with zoom=1) fits page exactly; user can adjust afterward
+     
+      // Set zoom so base calculation (with zoom=1) fits page exactly; usr can adjust afterward
       setZoom(1);
     }
   }, [containerWidth, availableHeight, pageAspect]);

@@ -9,6 +9,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --no-audit --no-fund
 
+ENV VITE_API_BASE=https://reformed-ai.chat
+
 # Copy the rest and build
 COPY . .
 RUN npm run build
