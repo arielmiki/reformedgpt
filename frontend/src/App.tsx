@@ -232,7 +232,6 @@ function App() {
               </Avatar>
               <Box>
                 <Text fw={700} size="sm">ReformedAI</Text>
-                <Text size="xs" c="dimmed">Assistant</Text>
               </Box>
             </Group>
             <Divider />
@@ -285,6 +284,11 @@ function App() {
           onSendMessage={handleSendMessage}
           disabled={!activeChatId}
         />
+        <Box mt={2} pb={4} style={{ textAlign: 'center' }}>
+          <Text size="xs" c="dimmed" style={{ letterSpacing: 0.3, fontStyle: 'italic' }}>
+            Soli Deo Gloria! · © {new Date().getFullYear()}
+          </Text>
+        </Box>
       </AppShell.Main>
 
       {/* Mobile left drawer for chats when navbar is hidden */}
