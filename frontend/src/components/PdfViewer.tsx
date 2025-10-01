@@ -17,11 +17,12 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 
 interface PdfViewerProps {
   file: string;
+  url: string;
   pageNumber: number;
   highlight: string;
 }
 
-export function PdfViewer({ file, pageNumber, highlight }: PdfViewerProps) {
+export function PdfViewer({ file, pageNumber, highlight, url }: PdfViewerProps) {
 
   const [error, setError] = useState<string | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(0);
@@ -67,7 +68,6 @@ export function PdfViewer({ file, pageNumber, highlight }: PdfViewerProps) {
     if (containerWidth > 0 && availableHeight > 0 && pageAspect) {
       // Fit whole page in view by default (width constrained by both container and height)
       const fitWidthFromHeight = availableHeight * pageAspect;
-      const baseWidth = Math.min(containerWidth, fitWidthFromHeight);
       // Set zoom so base calculation (with zoom=1) fits page exactly; user can adjust afterward
       setZoom(1);
     }
@@ -105,7 +105,7 @@ export function PdfViewer({ file, pageNumber, highlight }: PdfViewerProps) {
       }}
     >
       <Document
-        file={`http://localhost:8000/static/${file}`}
+        file={url}
         onLoadSuccess={onDocumentLoadSuccess}
         onLoadError={(e) => setError((e as Error)?.message || 'Failed to load PDF')}
         loading={null}

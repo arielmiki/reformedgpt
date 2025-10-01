@@ -54,8 +54,12 @@ venv.bak/
 
 # IDEs
 .idea/
-.vscode/
+vscode/
 
 # SQLite databases
 *.sqlite3
 *.db
+*.env
+
+# Cached data files
+data/

@@ -20,7 +20,7 @@ function App() {
   const [drawerOpened, setDrawerOpened] = useState(false);
   // Sidebar is fixed (no collapsible behavior)
   const [mobileNavOpened, setMobileNavOpened] = useState(false);
-  const [pdfSource, setPdfSource] = useState<{ file: string; pageNumber: number; highlight: string } | null>(null);
+  const [pdfSource, setPdfSource] = useState<{ file: string; url: string; pageNumber: number; highlight: string } | null>(null);
   const isMobile = useMediaQuery('(max-width: 48em)'); // ~768px, matches Mantine sm
   const didInitRef = useRef(false);
 
@@ -123,6 +123,7 @@ function App() {
   const handleCitationClick = (source: Source) => {
     setPdfSource({
       file: source.metadata.source,
+      url: source.metadata.url,
       pageNumber: source.metadata.page,
       highlight: source.content,
     });
@@ -362,6 +363,7 @@ function App() {
             }}>
               <PdfViewer
                 file={pdfSource.file}
+                url = {pdfSource.url}
                 pageNumber={pdfSource.pageNumber}
                 highlight={pdfSource.highlight}
               />

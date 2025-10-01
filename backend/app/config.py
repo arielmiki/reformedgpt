@@ -16,5 +16,8 @@ class Settings(BaseModel):
     qdrant_host: str = os.getenv("QDRANT_HOST", "localhost")
     qdrant_port: int = int(os.getenv("QDRANT_PORT", "6333"))
     qdrant_collection_name: str = os.getenv("QDRANT_COLLECTION_NAME", "documents")
+    qdrant_timeout: float = float(os.getenv("QDRANT_TIMEOUT", "60.0"))
+    qdrant_batch_size: int = int(os.getenv("QDRANT_BATCH_SIZE", "200"))
+    embedding_model: str = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
 
 settings = Settings()

@@ -3,6 +3,7 @@ export interface Source {
   metadata: {
     page: number;
     source: string;
+    url: string;
   };
 }
 

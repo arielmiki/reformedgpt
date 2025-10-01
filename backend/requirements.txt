@@ -15,3 +15,5 @@ sentence-transformers
 # Text splitting utilities
 langchain-text-splitters>=0.2.0
 
+# Networking
+requests
