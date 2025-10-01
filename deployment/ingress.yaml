@@ -6,8 +6,15 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/proxy-buffering: "off"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      # sse
+      proxy_set_header Connection '';
+      proxy_http_version 1.1;
+      chunked_transfer_encoding off;
+
+      # cache
+      proxy_buffering off;
+      proxy_cache off;
 spec:
   rules:
   - host: reformed-ai.chat
