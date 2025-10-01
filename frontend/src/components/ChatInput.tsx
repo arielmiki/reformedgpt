@@ -10,7 +10,15 @@ interface ChatInputProps {
 
 export function ChatInput({ value, onChange, onSendMessage, disabled }: ChatInputProps) {
   return (
-    <Paper bg="transparent" style={{ maxWidth: '800px', margin: '0 auto', width: '100%'}}>
+    <Paper
+      bg="transparent"
+      style={{
+        maxWidth: '800px',
+        margin: '8px auto 0',
+        width: '100%',
+        padding: '8px 0 8px',
+      }}
+    >
       <Group>
         <TextInput
           style={{ flex: 1 }}
